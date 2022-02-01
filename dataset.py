@@ -39,11 +39,12 @@ class CustomLoadDataset(Dataset):
 
 
 class RedWarriorDataset(Dataset):
-    def __init__(self, data_file, historic_window, forecast_horizon, device=None, normalize=True):
+    def __init__(self, data_file, historic_window, forecast_horizon, city_='os',device=None, normalize=True):
         # Input sequence length and output (forecast) sequence length
         self.historic_window = historic_window
         self.forecast_horizon = forecast_horizon
-
+        self.normalize=normalize
+        self.city = city_
         self.city_population = {'h': 535061.0,
                                 'bs': 248023.0,
                                 'ol': 167081.0,
@@ -61,17 +62,17 @@ class RedWarriorDataset(Dataset):
 
         # Load Data from csv to Pandas Dataframe
         raw_data = pd.read_csv(data_file, delimiter=',')
-        raw_data['Time'] = pd.to_datetime(raw_data['Time'])
+        raw_data['Time [s]'] = pd.to_datetime(raw_data['Time [s]'])
 
-        raw_data['day_frac'] = (raw_data['Time'] - pd.to_datetime(raw_data['Time'].dt.date)).dt.total_seconds() / (
+        raw_data['day_frac'] = (raw_data['Time [s]'] - pd.to_datetime(raw_data['Time [s]'].dt.date)).dt.total_seconds() / (
                 24 * 3600)
 
-        raw_data['week_frac'] = (raw_data['Time'].dt.dayofweek + raw_data['frac_day']) / 7
+        raw_data['week_frac'] = (raw_data['Time [s]'].dt.dayofweek + raw_data['frac_day']) / 7
 
-        raw_data['month_frac'] = (raw_data['Time'].dt.day + raw_data['frac_day'] - 1) / raw_data[
-            'Time'].dt.days_in_month
+        raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['frac_day'] - 1) / raw_data[
+            'Time [s]'].dt.days_in_month
 
-        raw_data['year_frac'] = raw_data['Time'].dt.dayofyear / (365 + raw_data['Time'].dt.is_leap_year.astype(float))
+        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
 
         self.cities = raw_data['City'].unique()
         self.city_pop_in_data = {x: self.city_population[x] for x in self.city_population if x in self.cities}
@@ -79,26 +80,34 @@ class RedWarriorDataset(Dataset):
         self.dataset = {}
         for city, population in self.city_pop_in_data:
             city_data = raw_data[raw_data['City'] == city]
-            self.dataset[city] = torch.Tensor(city_data['Load [MWh]'].values.astype(np.float32)) / population
+            self.dataset[city] = torch.Tensor(city_data['Load [MWh]',
+                                                        'day_frac',
+                                                        'week_frac',
+                                                        'month_frac',
+                                                        'year_frac',].values.astype(np.float32)) / population
             # Normalize Data to [0,1]
             if normalize is True:
                 self.data_min[city] = torch.min(self.dataset[city])
                 self.data_max[city] = torch.max(self.dataset[city])
                 self.dataset[city] = (self.dataset[city] - self.data_min[city]) / (
                         self.data_max[city] - self.data_min[city])
-
-            self.dataset[city] = self.dataset.to(device[city])
+            self.dataset[city] = self.dataset.to(device)
 
     def __len__(self):
-        return int(self.dataset.shape[0] - self.historic_window - self.forecast_horizon)
+        return int(next(iter(self.dataset)).shape[0] - self.historic_window - self.forecast_horizon)
 
     def __getitem__(self, idx):
         # translate idx (day nr) to array index
-        x = self.dataset[idx:idx + self.historic_window].unsqueeze(dim=1)
-        y = self.dataset[idx + self.historic_window: idx + self.historic_window + self.forecast_horizon].unsqueeze(
-            dim=1)
+        x = self.dataset[self.city][idx:idx + self.historic_window]
+        y = self.dataset[self.city][idx + self.historic_window: idx + self.historic_window + self.forecast_horizon]
 
         return x, y
 
-    def revert_normalization(self, data, city):
-        return data * (self.data_max[city] - self.data_min[city]) + self.data_min[city]
+    def revert_normalization(self, data):
+        data_ret = {}
+        for city, data_ in data:
+            # Normalize Data to [0,1]
+            data_ret = data_ * (self.data_max[city] - self.data_min[city]) + self.data_min[city]
+            return data_ret
+        else:
+            return data
