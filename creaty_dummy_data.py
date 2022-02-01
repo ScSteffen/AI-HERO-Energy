@@ -8,6 +8,8 @@ dummy_df = dummy_df[:26281]  # 2 years of data
 times = pd.date_range(start="1/1/2015", end="12/31/2017", freq="1H")
 dummy_df['Time [s]'] = times
 dummy_df['City'] = 'bs'
-dummy_df.to_csv("Data/dummy.csv", index=False)
+dummy_df.to_csv("Data/train.csv", index=False)
+dummy_df.to_csv("Data/valid.csv", index=False)
+
 print(dummy_df)
 print("finished")
