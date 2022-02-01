@@ -39,7 +39,8 @@ class CustomLoadDataset(Dataset):
 
 
 class RedWarriorDataset(Dataset):
-    def __init__(self, data_file, historic_window, forecast_horizon, city_='os',device=None, normalize=True):
+    """A dataset which takes a file with columns containing a float, timestamp and a string"""
+    def __init__(self, data_file, historic_window, forecast_horizon, city_='bs',device=None, normalize=True):
         # Input sequence length and output (forecast) sequence length
         self.historic_window = historic_window
         self.forecast_horizon = forecast_horizon
@@ -62,6 +63,7 @@ class RedWarriorDataset(Dataset):
 
         # Load Data from csv to Pandas Dataframe
         raw_data = pd.read_csv(data_file, delimiter=',')
+        raw_data = raw_data[raw_data['City']==self.city]
         raw_data['Time [s]'] = pd.to_datetime(raw_data['Time [s]'])
 
         raw_data['day_frac'] = (raw_data['Time [s]'] - pd.to_datetime(raw_data['Time [s]'].dt.date)).dt.total_seconds() / (
@@ -74,40 +76,29 @@ class RedWarriorDataset(Dataset):
 
         raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
 
-        self.cities = raw_data['City'].unique()
-        self.city_pop_in_data = {x: self.city_population[x] for x in self.city_population if x in self.cities}
+        self.dataset = torch.Tensor(raw_data[['Load [MWh]', \
+                                              'day_frac', \
+                                              'week_frac', \
+                                              'month_frac', \
+                                              'year_frac']].values.astype(np.float32)) # / population
+        # Normalize Data to [0,1]
+        if normalize is True:
+            # No need to normalize
+            self.data_min = self.dataset[:,0].min()
+            self.data_max = self.dataset[:,0].max()
+            self.dataset[:,0] = (self.dataset[:,0] - self.data_min) / (self.data_max - self.data_min)
 
-        self.dataset = {}
-        for city, population in self.city_pop_in_data:
-            city_data = raw_data[raw_data['City'] == city]
-            self.dataset[city] = torch.Tensor(city_data['Load [MWh]',
-                                                        'day_frac',
-                                                        'week_frac',
-                                                        'month_frac',
-                                                        'year_frac',].values.astype(np.float32)) / population
-            # Normalize Data to [0,1]
-            if normalize is True:
-                self.data_min[city] = torch.min(self.dataset[city])
-                self.data_max[city] = torch.max(self.dataset[city])
-                self.dataset[city] = (self.dataset[city] - self.data_min[city]) / (
-                        self.data_max[city] - self.data_min[city])
-            self.dataset[city] = self.dataset.to(device)
+        self.dataset = self.dataset.to(device)
 
     def __len__(self):
-        return int(next(iter(self.dataset)).shape[0] - self.historic_window - self.forecast_horizon)
+        return int(self.dataset.shape[0] - self.historic_window - self.forecast_horizon)
 
     def __getitem__(self, idx):
         # translate idx (day nr) to array index
-        x = self.dataset[self.city][idx:idx + self.historic_window]
-        y = self.dataset[self.city][idx + self.historic_window: idx + self.historic_window + self.forecast_horizon]
+        x = self.dataset[idx:idx + self.historic_window]
+        y = self.dataset[idx + self.historic_window: idx + self.historic_window + self.forecast_horizon, 0].unsqueeze(1)
 
         return x, y
 
     def revert_normalization(self, data):
-        data_ret = {}
-        for city, data_ in data:
-            # Normalize Data to [0,1]
-            data_ret = data_ * (self.data_max[city] - self.data_min[city]) + self.data_min[city]
-            return data_ret
-        else:
-            return data
+        return data[:,0] * (self.data_max - self.data_min) + self.data_min
