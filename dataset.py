@@ -67,9 +67,9 @@ class RedWarriorDataset(Dataset):
         raw_data['day_frac'] = (raw_data['Time [s]'] - pd.to_datetime(raw_data['Time [s]'].dt.date)).dt.total_seconds() / (
                 24 * 3600)
 
-        raw_data['week_frac'] = (raw_data['Time [s]'].dt.dayofweek + raw_data['frac_day']) / 7
+        raw_data['week_frac'] = (raw_data['Time [s]'].dt.dayofweek + raw_data['day_frac']) / 7
 
-        raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['frac_day'] - 1) / raw_data[
+        raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['day_frac'] - 1) / raw_data[
             'Time [s]'].dt.days_in_month
 
         raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
