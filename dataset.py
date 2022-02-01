@@ -62,17 +62,17 @@ class RedWarriorDataset(Dataset):
 
         # Load Data from csv to Pandas Dataframe
         raw_data = pd.read_csv(data_file, delimiter=',')
-        raw_data['Time'] = pd.to_datetime(raw_data['Time'])
+        raw_data['Time [s]'] = pd.to_datetime(raw_data['Time [s]'])
 
-        raw_data['day_frac'] = (raw_data['Time'] - pd.to_datetime(raw_data['Time'].dt.date)).dt.total_seconds() / (
+        raw_data['day_frac'] = (raw_data['Time [s]'] - pd.to_datetime(raw_data['Time [s]'].dt.date)).dt.total_seconds() / (
                 24 * 3600)
 
-        raw_data['week_frac'] = (raw_data['Time'].dt.dayofweek + raw_data['frac_day']) / 7
+        raw_data['week_frac'] = (raw_data['Time [s]'].dt.dayofweek + raw_data['frac_day']) / 7
 
-        raw_data['month_frac'] = (raw_data['Time'].dt.day + raw_data['frac_day'] - 1) / raw_data[
-            'Time'].dt.days_in_month
+        raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['frac_day'] - 1) / raw_data[
+            'Time [s]'].dt.days_in_month
 
-        raw_data['year_frac'] = raw_data['Time'].dt.dayofyear / (365 + raw_data['Time'].dt.is_leap_year.astype(float))
+        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
 
         self.cities = raw_data['City'].unique()
         self.city_pop_in_data = {x: self.city_population[x] for x in self.city_population if x in self.cities}
