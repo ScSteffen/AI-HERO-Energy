@@ -1,4 +1,4 @@
--f https://download.pytorch.org/whl/cu113/torch_stable.html
-torch>=1.10.0+cu113 
+-f https://download.pytorch.org/whl/cpu/torch-1.10.1%2Bcpu-cp38-cp38-linux_x86_64.whl
+torch>=1.10.0
 pandas>=1.1.5
 scipy>=1.7.3

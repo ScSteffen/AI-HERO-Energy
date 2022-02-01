@@ -43,7 +43,7 @@ class RedWarriorDataset(Dataset):
         # Input sequence length and output (forecast) sequence length
         self.historic_window = historic_window
         self.forecast_horizon = forecast_horizon
-
+        self.normalize=normalize
         self.city_population = {'h': 535061.0,
                                 'bs': 248023.0,
                                 'ol': 167081.0,
@@ -79,26 +79,34 @@ class RedWarriorDataset(Dataset):
         self.dataset = {}
         for city, population in self.city_pop_in_data:
             city_data = raw_data[raw_data['City'] == city]
-            self.dataset[city] = torch.Tensor(city_data['Load [MWh]'].values.astype(np.float32)) / population
+            self.dataset[city] = torch.Tensor(city_data['Load [MWh]',
+                                                        'day_frac',
+                                                        'week_frac',
+                                                        'month_frac',
+                                                        'year_frac',].values.astype(np.float32)) / population
             # Normalize Data to [0,1]
             if normalize is True:
                 self.data_min[city] = torch.min(self.dataset[city])
                 self.data_max[city] = torch.max(self.dataset[city])
                 self.dataset[city] = (self.dataset[city] - self.data_min[city]) / (
                         self.data_max[city] - self.data_min[city])
-
-            self.dataset[city] = self.dataset.to(device[city])
+            self.dataset[city] = self.dataset.to(device)
 
     def __len__(self):
-        return int(self.dataset.shape[0] - self.historic_window - self.forecast_horizon)
+        return int(next(iter(self.dataset)).shape[0] - self.historic_window - self.forecast_horizon)
 
     def __getitem__(self, idx):
         # translate idx (day nr) to array index
-        x = self.dataset[idx:idx + self.historic_window].unsqueeze(dim=1)
-        y = self.dataset[idx + self.historic_window: idx + self.historic_window + self.forecast_horizon].unsqueeze(
-            dim=1)
+        x = self.dataset_merged[idx:idx + self.historic_window]
+        y = self.dataset_merged[idx + self.historic_window: idx + self.historic_window + self.forecast_horizon]
 
         return x, y
 
-    def revert_normalization(self, data, city):
-        return data * (self.data_max[city] - self.data_min[city]) + self.data_min[city]
+    def revert_normalization(self, data):
+        data_ret = {}
+        for city, data_ in data:
+            # Normalize Data to [0,1]
+            data_ret = data_ * (self.data_max[city] - self.data_min[city]) + self.data_min[city]
+            return data_ret
+        else:
+            return data
