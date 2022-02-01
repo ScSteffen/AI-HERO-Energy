@@ -39,11 +39,12 @@ class CustomLoadDataset(Dataset):
 
 
 class RedWarriorDataset(Dataset):
-    def __init__(self, data_file, historic_window, forecast_horizon, device=None, normalize=True):
+    def __init__(self, data_file, historic_window, forecast_horizon, city_='os',device=None, normalize=True):
         # Input sequence length and output (forecast) sequence length
         self.historic_window = historic_window
         self.forecast_horizon = forecast_horizon
         self.normalize=normalize
+        self.city = city_
         self.city_population = {'h': 535061.0,
                                 'bs': 248023.0,
                                 'ol': 167081.0,
@@ -97,8 +98,8 @@ class RedWarriorDataset(Dataset):
 
     def __getitem__(self, idx):
         # translate idx (day nr) to array index
-        x = self.dataset_merged[idx:idx + self.historic_window]
-        y = self.dataset_merged[idx + self.historic_window: idx + self.historic_window + self.forecast_horizon]
+        x = self.dataset[self.city][idx:idx + self.historic_window]
+        y = self.dataset[self.city][idx + self.historic_window: idx + self.historic_window + self.forecast_horizon]
 
         return x, y
 
