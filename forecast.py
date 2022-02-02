@@ -29,9 +29,8 @@ def forecast(forecast_model, forecast_set, device):
             cities[n * batch_size:n * batch_size + actual_batch_size] = input_seq[:, :, 4].squeeze(dim=-1)
 
     for i in range(forecasts.size()[0]):
-        for j in range(forecasts.size()[1]):
-            scaler = forecast_set.scaling_dict[forecast_set.index_to_city[int(cities[i, j])]]
-            forecasts[i, j] = forecasts[i, j] * (scaler[1] - scaler[0]) + scaler[0]
+        scaler = forecast_set.scaling_dict[forecast_set.index_to_city[int(cities[i, 0])]]
+        forecasts[i, :] = forecasts[i, :] * (scaler[1] - scaler[0]) + scaler[0]
 
     """
     input = forecast_set.dataset
