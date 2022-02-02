@@ -135,20 +135,20 @@ class AllCitiesDataset(Dataset):
         self.forecast_horizon = forecast_horizon
         self.normalize = normalize
         self.data_file = data_file
-        self.city_population = {'h': 535061.0,
-                                'bs': 248023.0,
-                                'ol': 167081.0,
-                                'os': 164374.0,
-                                'wob': 123914.0,
-                                'go': 119529.0,
-                                'sz': 104548.0,
-                                'hi': 101744.0,
-                                'del': 77521.0,
-                                'lg': 75192.0,
-                                'whv': 76316.0,
-                                'ce': 69706.0,
-                                'hm': 57228.0,
-                                'el': 54117.0}
+        self.city_population = {'h': 0,
+                                'bs': 1,
+                                'ol': 2,
+                                'os': 3,
+                                'wob': 4,
+                                'go': 5,
+                                'sz': 6,
+                                'hi': 7,
+                                'del': 8,
+                                'lg': 9,
+                                'whv': 10,
+                                'ce': 11,
+                                'hm': 12,
+                                'el': 13}
 
         # Load Data from csv to Pandas Dataframe
         raw_data = pd.read_csv(self.data_file, delimiter=',')
@@ -169,6 +169,10 @@ class AllCitiesDataset(Dataset):
         self.cities = raw_data['City'].unique()
         self.city_pop_in_data = {x: self.city_population[x] for x in self.city_population if x in self.cities}
         self.city_tags = raw_data['City'].to_numpy()
+
+        city_tens = torch.zeros((raw_data['City'].size, 1))
+        for i in range(raw_data['City'].size):
+            city_tens[i] = self.city_pop_in_data[raw_data['City'][i]]
         self.n_cities = len(self.cities)
         self.scaling_dict = dict()
         self.total_samples = 0
@@ -188,7 +192,10 @@ class AllCitiesDataset(Dataset):
             self.n_timepoints = datasets[-1].shape[0] - self.historic_window - self.forecast_horizon
             self.total_samples += self.n_timepoints
             i += 1
+        t = int(city_tens.size()[0] / self.n_cities)
+        city_tens = torch.reshape(city_tens, (self.n_cities, t, 1))
 
+        # datasets.append(city_tens)
         # Normalize Data to [0,1]
 
         if normalize and test:  # load scaling data
@@ -198,6 +205,7 @@ class AllCitiesDataset(Dataset):
                         self.scaling_dict[self.cities[i]][1] - self.scaling_dict[self.cities[i]][0])
 
         self.dataset = torch.stack(datasets)
+        self.dataset = torch.cat([self.dataset, city_tens], -1)
         if normalize and not test:
             # No need to normalize
             self.data_min = self.dataset[:, :, 0].min(1, keepdim=True)[0]

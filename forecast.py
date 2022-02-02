@@ -15,10 +15,25 @@ def forecast(forecast_model, forecast_set, device):
     forecast_model.to(device)
     forecast_model.eval()
 
-    # batch_size = 1
-    # forecast_loader = DataLoader(forecast_set, batch_size=batch_size, shuffle=False)
-    # forecasts = torch.zeros([len(forecast_set), 1], device=device)
-    # batch x zeit x features
+    batch_size = 64
+    forecast_loader = DataLoader(forecast_set, batch_size=64, shuffle=False)
+    forecasts = torch.zeros([len(forecast_set), 7 * 24], device=device)
+    cities = torch.zeros([len(forecast_set), 7 * 24], device=device)
+    for n, (input_seq, _) in enumerate(forecast_loader):
+        # TODO: adjust forecast loop according to your model
+        with torch.no_grad():
+            actual_batch_size = len(input_seq)  # last batch has different size
+            hidden = forecast_model.init_hidden(actual_batch_size)
+            prediction, hidden = forecast_model(input_seq[:, :, :4], hidden)
+            forecasts[n * batch_size:n * batch_size + actual_batch_size] = prediction.squeeze(dim=-1)
+            cities[n * batch_size:n * batch_size + actual_batch_size] = input_seq[:, :, 4].squeeze(dim=-1)
+
+    for i in range(forecasts.size()[0]):
+        for j in range(forecasts.size()[1]):
+            scaler = forecast_set.scaling_dict[forecast_set.index_to_city[int(cities[i, j])]]
+            forecasts[i, j] = forecasts[i, j] * (scaler[1] - scaler[0]) + scaler[0]
+
+    """
     input = forecast_set.dataset
     pred_list = []
     with torch.no_grad():
@@ -35,7 +50,8 @@ def forecast(forecast_model, forecast_set, device):
 
     # rearrange to 168xnumWeeks matrix
     out2 = np.reshape(out, (-1, 168))
-    return out2
+    """
+    return forecasts
 
 
 if __name__ == '__main__':
@@ -70,7 +86,8 @@ if __name__ == '__main__':
     # run inference
     forecasts = forecast(model, testset, device)
 
-    df = DataFrame(forecasts)
+    # remove normalization and convert to DataFrame
+    df = DataFrame(forecasts.to(torch.device('cpu')).numpy())
 
     # save to csv
     result_path = os.path.join(save_dir, 'forecasts.csv')
