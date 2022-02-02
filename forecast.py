@@ -63,7 +63,7 @@ if __name__ == '__main__':
     test_file = os.path.join(data_dir, 'test.csv')
     valid_file = os.path.join(data_dir, 'valid.csv')
     data_file = test_file if os.path.exists(test_file) else valid_file
-    testset = AllCitiesDataset(data_file, 7 * 24, 7 * 24, device=device, test=True, data_dir=save_dir)
+    testset = AllCitiesDataset(data_file, 7 * 24, 7 * 24, device=device, test=True, data_dir=weights_path)
 
     # run inference
     forecasts = forecast(model, testset, device)
