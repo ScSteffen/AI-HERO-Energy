@@ -6,8 +6,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from model import LoadForecaster
-from dataset import AllCitiesDataset
-
+from dataset import AllCitiesDataset, RedWarriorDataset
 
 forecast_days = 7
 
@@ -17,8 +16,8 @@ def main():
     parser.add_argument("--data_dir", default="~/Data/AI-Hero/", type=str)
     parser.add_argument("--num_epochs", type=int, default=30)
     parser.add_argument("--save_dir", default=None, help="saves the model, if path is provided")
-    parser.add_argument("--historic_window", type=int, default=7*24, help="input time steps in hours")
-    parser.add_argument("--forecast_horizon", type=int, default=forecast_days*24, help="forecast time steps in hours")
+    parser.add_argument("--historic_window", type=int, default=7 * 24, help="input time steps in hours")
+    parser.add_argument("--forecast_horizon", type=int, default=forecast_days * 24, help="forecast time steps in hours")
     parser.add_argument("--hidden_size", type=int, default=48, help="size of the internal state")
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--batch_size", type=int, default=64)
@@ -35,9 +34,9 @@ def main():
 
     # Loading Data
     data_dir = args.data_dir
-    train_set = AllCitiesDataset(
-        os.path.join(data_dir, 'train.csv'),
-        historic_window, forecast_horizon, device)
+    train_set = RedWarriorDataset(
+        os.path.join(data_dir, 'train.csv'), historic_window, forecast_horizon, city_='bs', device=None, normalize=True,
+        data_dir=data_dir)
     valid_set = AllCitiesDataset(
         os.path.join(data_dir, 'valid.csv'),
         historic_window, forecast_horizon, device)
@@ -94,7 +93,7 @@ def main():
         val_loss[epoch] /= len(loader)
         print(f"Epoch {epoch + 1}: Training Loss = {train_loss[epoch]}, Validation Loss = {val_loss[epoch]}")
 
-    model_name="energy_" + "lstmv1"
+    model_name = "energy_" + "lstmv1"
     if args.save_dir:
         os.makedirs(args.save_dir, exist_ok=True)
         save_file = os.path.join(args.save_dir, model_name + ".pt")
