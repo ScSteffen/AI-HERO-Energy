@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import torch
 from torch.utils.data import DataLoader
 from pandas import DataFrame
-from dataset import CustomLoadDataset
+from dataset import AllCitiesDataset
 
 # TODO: import your model
 from model import LoadForecaster as SubmittedModel
@@ -15,14 +15,14 @@ def forecast(forecast_model, forecast_set, device):
 
     batch_size = 64
     forecast_loader = DataLoader(forecast_set, batch_size=64, shuffle=False)
-    forecasts = torch.zeros([len(forecast_set), 7*24], device=device)
+    forecasts = torch.zeros([forecast_set.n_cities , forecast_set.n_timepoinsts, 7*24], device=device)
     for n, (input_seq, _) in enumerate(forecast_loader):
         # TODO: adjust forecast loop according to your model
         with torch.no_grad():
             actual_batch_size = len(input_seq)  # last batch has different size
             hidden = forecast_model.init_hidden(actual_batch_size)
             prediction, hidden = forecast_model(input_seq, hidden)
-            forecasts[n * batch_size:n * batch_size + actual_batch_size] = prediction.squeeze(dim=-1)
+            forecasts[n * batch_size:n * batch_size + actual_batch_size] = prediction
     return forecasts
 
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     # load model with pretrained weights
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # TODO: adjust arguments according to your model
-    model = SubmittedModel(input_size=1, hidden_size=48, output_size=1, num_layer=1, device=device)
+    model = SubmittedModel(input_size=3, hidden_size=48, output_size=1, num_layer=1, device=device)
     model.load_state_dict(torch.load(weights_path, map_location=device))
     model.eval()
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     test_file = os.path.join(data_dir, 'test.csv')
     valid_file = os.path.join(data_dir, 'valid.csv')
     data_file = test_file if os.path.exists(test_file) else valid_file
-    testset = CustomLoadDataset(data_file, 7*24, 7*24, device=device)
+    testset = AllCitiesDataset(data_file, 7*24, 7*24, device=device)
 
     # run inference
     normalized_forecasts = forecast(model, testset, device)

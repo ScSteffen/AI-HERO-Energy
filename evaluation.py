@@ -6,7 +6,7 @@ import torch
 from torch.nn import L1Loss
 from torch.utils.data import DataLoader
 
-from dataset import CustomLoadDataset
+from dataset import AllCitiesDataset
 
 
 baseline_mae = 9.538227766478586
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     test_file = os.path.join(data_dir, 'test.csv')
     valid_file = os.path.join(data_dir, 'valid.csv')
     data_file = test_file if os.path.exists(test_file) else valid_file
-    testset = CustomLoadDataset(data_file, 7*24, 7*24, normalize=False)
+    testset = AllCitiesDataset(data_file, 7*24, 7*24, normalize=False)
     testloader = DataLoader(testset, len(testset), shuffle=False)
 
     for _, target in testloader:

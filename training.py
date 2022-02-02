@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from model import LoadForecaster
-from dataset import CustomLoadDataset
+from dataset import AllCitiesDataset
 
 
 forecast_days = 7
@@ -35,10 +35,10 @@ def main():
 
     # Loading Data
     data_dir = args.data_dir
-    train_set = CustomLoadDataset(
+    train_set = AllCitiesDataset(
         os.path.join(data_dir, 'train.csv'),
         historic_window, forecast_horizon, device)
-    valid_set = CustomLoadDataset(
+    valid_set = AllCitiesDataset(
         os.path.join(data_dir, 'valid.csv'),
         historic_window, forecast_horizon, device)
 
@@ -49,7 +49,7 @@ def main():
 
     # Configuring Model
     hidden_nodes = args.hidden_size
-    input_size = 1
+    input_size = 3
     output_size = 1
 
     n_iterations = args.num_epochs
@@ -94,9 +94,10 @@ def main():
         val_loss[epoch] /= len(loader)
         print(f"Epoch {epoch + 1}: Training Loss = {train_loss[epoch]}, Validation Loss = {val_loss[epoch]}")
 
+    model_name="energy_" + "lstmv1"
     if args.save_dir:
         os.makedirs(args.save_dir, exist_ok=True)
-        save_file = os.path.join(args.save_dir, "energy_baseline.pt")
+        save_file = os.path.join(args.save_dir, model_name + ".pt")
         torch.save(model.state_dict(), save_file)
         print(f"Done! Saved model weights at {save_file}")
 
