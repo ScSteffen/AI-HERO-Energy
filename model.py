@@ -28,27 +28,6 @@ class LoadForecaster(nn.Module):
 
 
 class LoadForecasterTransformer(nn.Module):
-    def __init__(self, input_size: int, out_size: int, num_heads: int, num_encoder_layers: int,
-                 num_decoder_layers: int = 1, dropout: float = 0, device: torch.device = None):
-        super(LoadForecasterTransformer, self).__init__()
-
-        self.device = device
-        self.transformer = CustomTransformer(num_tokens=input_size, dim_model=out_size, num_heads=num_heads,
-                                             num_encoder_layers=num_encoder_layers,
-                                             num_decoder_layers=num_decoder_layers, dropout_p=dropout)
-
-    def forward(self, input_sequence, hidden):
-        output = self.transformer(input_sequence, hidden)
-        return output
-
-    def init_hidden(self, batch_size):
-        hidden_state = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=self.device)
-        cell_state = torch.randn(self.num_layers, batch_size, self.hidden_size, device=self.device)
-
-        return hidden_state, cell_state
-
-
-class CustomTransformer(nn.Module):
     """
     Model from "A detailed guide to Pytorch's nn.Transformer() module.", by
     Daniel Melchor: https://medium.com/@danielmelchor/a-detailed-guide-to-pytorchs-nn-transformer-module-c80afbc9ffb1
