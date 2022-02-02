@@ -51,9 +51,8 @@ class CustomLoadDataset(Dataset):
 
 class RedWarriorDataset(Dataset):
     """A dataset which takes a file with columns containing a float, timestamp and a string"""
-
-    def __init__(self, data_file, historic_window, forecast_horizon, city_='bs', device=None, normalize=True,
-                 data_dir=None):
+    def __init__(self, data_file, historic_window, forecast_horizon,
+                 city_='bs',device=None, normalize=True, data_dir=None, data_min=None, data_max=None):
         # Input sequence length and output (forecast) sequence length
         self.historic_window = historic_window
         self.forecast_horizon = forecast_horizon
@@ -100,12 +99,21 @@ class RedWarriorDataset(Dataset):
         scaling_data = []
         if normalize is True:
             # No need to normalize
-            self.data_min = self.dataset[:, 0].min()
-            self.data_max = self.dataset[:, 0].max()
+            if data_min is None:
+                self.data_min = self.dataset[:,0].min()
+            else:
+                self.data_min = data_min
+
+            if data_max is None:
+                self.data_max = self.dataset[:,0].max()
+            else:
+                self.data_max = data_max
+
+            self.dataset[:,0] = (self.dataset[:,0] - self.data_min) / (self.data_max - self.data_min)
             scaling_data.append([self.data_min, self.data_max])
-            self.dataset[:, 0] = (self.dataset[:, 0] - self.data_min) / (self.data_max - self.data_min)
         scaling_data = np.asarray(scaling_data)
         np.savetxt(data_dir + city_ + "_scaling_data.csv", scaling_data)
+
         self.dataset = self.dataset.to(device)
 
     def __len__(self):
@@ -124,8 +132,9 @@ class RedWarriorDataset(Dataset):
 
 class AllCitiesDataset(Dataset):
     """A dataset which takes a file with columns containing a float, timestamp and a string"""
+    def __init__(self, data_file, historic_window, forecast_horizon,
+                 device=None, normalize=True, data_min=None, data_max=None):
 
-    def __init__(self, data_file, historic_window, forecast_horizon, device=None, normalize=True):
         # Input sequence length and output (forecast) sequence length
         self.historic_window = historic_window
         self.forecast_horizon = forecast_horizon
@@ -187,9 +196,18 @@ class AllCitiesDataset(Dataset):
         # Normalize Data to [0,1]
         if normalize is True:
             # No need to normalize
-            self.data_min = self.dataset[:, :, 0].min(1, keepdim=True)[0]
-            self.data_max = self.dataset[:, :, 0].max(1, keepdim=True)[0]
-            self.dataset[:, :, 0] = (self.dataset[:, :, 0] - self.data_min) / (self.data_max - self.data_min)
+            if data_min is None:
+                self.data_min = self.dataset[:,:,0].min(1, keepdim=True)[0]
+            else:
+                self.data_min = data_min
+
+            if data_max is None:
+                self.data_max = self.dataset[:,:,0].max(1, keepdim=True)[0]
+            else:
+                self.data_max = data_max
+
+            self.dataset[:,:,0] = (self.dataset[:,:,0] - self.data_min) / (self.data_max - self.data_min)
+
         self.dataset = self.dataset.to(device)
 
     def __len__(self):

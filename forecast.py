@@ -15,7 +15,9 @@ def forecast(forecast_model, forecast_set, device):
 
     batch_size = 64
     forecast_loader = DataLoader(forecast_set, batch_size=64, shuffle=False)
-    forecasts = torch.zeros([forecast_set.n_cities , forecast_set.n_timepoinsts, 7*24], device=device)
+    forecasts = torch.zeros([forecast_set.n_cities,
+                             forecast_set.n_timepoints,
+                             7*24], device=device)
     for n, (input_seq, _) in enumerate(forecast_loader):
         # TODO: adjust forecast loop according to your model
         with torch.no_grad():
