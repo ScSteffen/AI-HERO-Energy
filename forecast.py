@@ -25,12 +25,13 @@ def forecast(forecast_model, forecast_set, device):
         hidden = forecast_model.init_hidden(input.size()[0])
         prediction, hidden = forecast_model(input, hidden)
 
+    pred_cpu = prediction.cpu()
     out = np.zeros((input.size()[0] * input.size()[1], 1))
-    for i in range(prediction.size()[0]):
+    for i in range(pred_cpu.size()[0]):
         # get scalings of this city
         city = forecast_set.index_to_city[i]
         scaler = forecast_set.scaling_dict[city]
-        out[i * input.size()[1]:(i + 1) * input.size()[1]] = prediction[i] * (scaler[1] - scaler[0]) + scaler[0]
+        out[i * input.size()[1]:(i + 1) * input.size()[1]] = pred_cpu[i] * (scaler[1] - scaler[0]) + scaler[0]
 
     # rearrange to 168xnumWeeks matrix
     out2 = np.reshape(out, (-1, 168))
