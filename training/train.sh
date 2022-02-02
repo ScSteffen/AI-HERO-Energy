@@ -15,5 +15,9 @@ group_workspace=/hkfs/work/workspace/scratch/bh6321-${group_name}
 data_dir=/hkfs/work/workspace/scratch/bh6321-energy_challenge/data
 
 source ${group_workspace}/AI-HERO-Energy/energy_baseline_env/bin/activate
-python -u ${group_workspace}/AI-HERO-Energy/training.py --data_dir ${data_dir} --save_dir ${PWD}
 
+
+srun --gres=gpu:2 -n2 --exclusive python -u ${group_workspace}/AI-HERO-Energy/training.py --data_dir ${data_dir} --save_dir ${PWD} &
+srun --gres=gpu:1 -n1 --exclusive python -u ${group_workspace}/AI-HERO-Energy/training.py --data_dir ${data_dir} --save_dir ${PWD} &
+srun --gres=gpu:1 -n1 --exclusive python -u ${group_workspace}/AI-HERO-Energy/training.py --data_dir ${data_dir} --save_dir ${PWD} &
+wait

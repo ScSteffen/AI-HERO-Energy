@@ -71,14 +71,14 @@ if __name__ == '__main__':
     test_file = os.path.join(data_dir, 'test.csv')
     valid_file = os.path.join(data_dir, 'valid.csv')
     data_file = test_file if os.path.exists(test_file) else valid_file
-    testset = AllCitiesDataset(data_file, 7 * 24, 7 * 24, device=device, test=True)
+    testset = AllCitiesDataset(data_file, 7*24, 7*24, device=device)
 
     # run inference
-    forecasts = forecast(model, testset, device)
+    normalized_forecasts = forecast(model, testset, device)
 
     # remove normalization and convert to DataFrame
-    # forecasts = testset.revert_normalization(normalized_forecasts)
-    df = DataFrame(forecasts)
+    forecasts = testset.revert_normalization(normalized_forecasts)
+    df = DataFrame(forecasts.to(torch.device('cpu')).numpy())
 
     # save to csv
     result_path = os.path.join(save_dir, 'forecasts.csv')
