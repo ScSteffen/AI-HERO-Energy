@@ -6,6 +6,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from model import LoadForecaster, LoadForecasterTransformer
+from tst import Transformer
 from dataset import CustomLoadDataset
 
 forecast_days = 7
@@ -36,10 +37,10 @@ def main():
     data_dir = args.data_dir
     train_set = CustomLoadDataset(
         os.path.join(data_dir, 'train.csv'),
-        historic_window + 1, forecast_horizon, device)
+        historic_window, forecast_horizon, device)
     valid_set = CustomLoadDataset(
         os.path.join(data_dir, 'valid.csv'),
-        historic_window + 1, forecast_horizon, device)
+        historic_window, forecast_horizon, device)
 
     # Create DataLoaders
     batch_size = args.batch_size
@@ -56,11 +57,8 @@ def main():
 
     trafo_model = True
 
-    if trafo_model:
-        model = LoadForecasterTransformer(num_tokens=historic_window, dim_model=32, num_heads=8,
-                                          num_encoder_layers=6, num_decoder_layers=6, dropout_p=0.0)
-    else:
-        model = LoadForecaster(input_size, hidden_nodes, output_size, device=device)
+    model = Transformer(d_input=1, d_model=32, d_output=1, q=10, v=1, h=8, N=4, attention_size=None,
+                        dropout=0.1)
 
     criterion = nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -72,21 +70,16 @@ def main():
         # training phase
         model.train()
         loader = train_loader
-
+        print(epoch)
+        count = 0
         for input_seq, target_seq in loader:
-            # Now we shift the tgt by one so  we predict the token at pos 1
-            y_input = target_seq[:, :-1]
-            y_expected = target_seq[:, 1:]
+            print(count)
+            count += 1
+            # Propagate input
+            predict = model(input_seq.to(device))
 
-            # Get mask to mask out the next words
-            sequence_length = target_seq.size(1)
-            tgt_mask = model.get_tgt_mask(sequence_length).to(device)
-            pred = model(input_seq, y_input, tgt_mask)
-
-            # Permute pred to have batch size first again
-            pred = pred.permute(1, 2, 0)
             loss = criterion(predict, target_seq)
-        
+            print(loss)
             train_loss[epoch] += loss.item()
 
             model.zero_grad()
