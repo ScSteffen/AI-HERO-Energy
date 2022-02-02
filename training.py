@@ -38,11 +38,11 @@ def main():
     if args.city is None:
         train_set = AllCitiesDataset(
             os.path.join(data_dir, 'train.csv'),
-            historic_window, forecast_horizon, device, True, args.city)
+            historic_window, forecast_horizon, device, normalize=True, test=False, data_dir=data_dir)
         valid_set = AllCitiesDataset(
             os.path.join(data_dir, 'valid.csv'),
-            historic_window, forecast_horizon, device, True, args.city,
-            train_set.data_min, train_set.data_max)
+            historic_window, forecast_horizon, device, normalize=True, test=True, data_dir=data_dir)
+        args.city = ""
     else:
         train_set = RedWarriorDataset(
             os.path.join(data_dir, 'train.csv'),
@@ -104,15 +104,15 @@ def main():
         val_loss[epoch] /= len(loader)
         print(f"Epoch {epoch + 1}: Training Loss = {train_loss[epoch]}, Validation Loss = {val_loss[epoch]}")
 
-    model_name='energy_' + args.city +  '_lstmv1'
-    normalization_name='minmax_dict_' + args.city
+    model_name = 'energy_' + args.city + '_lstmv1'
+    normalization_name = 'minmax_dict_' + args.city
     if args.save_dir:
         os.makedirs(args.save_dir, exist_ok=True)
         save_file = os.path.join(args.save_dir, model_name + ".pt")
         minmax_file = os.path.join(args.save_dir, normalization_name + ".pt")
         torch.save(model.state_dict(), save_file)
-        torch.save({'min' : train_set.data_min,
-                    'max' : train_set.data_max}, minmax_file)
+        torch.save({'min': train_set.data_min,
+                    'max': train_set.data_max}, minmax_file)
         print(f"Done! Saved model weights at {save_file}")
 
 

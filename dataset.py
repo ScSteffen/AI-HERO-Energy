@@ -126,7 +126,8 @@ class RedWarriorDataset(Dataset):
 class AllCitiesDataset(Dataset):
     """A dataset which takes a file with columns containing a float, timestamp and a string"""
 
-    def __init__(self, data_file, historic_window, forecast_horizon, device=None, normalize=True, test=False):
+    def __init__(self, data_file, historic_window, forecast_horizon, device=None, normalize=True, test=False,
+                 data_dir=""):
         # Input sequence length and output (forecast) sequence length
         self.historic_window = historic_window
         self.forecast_horizon = forecast_horizon
@@ -198,8 +199,13 @@ class AllCitiesDataset(Dataset):
             # No need to normalize
             self.data_min = self.dataset[:, :, 0].min(1, keepdim=True)[0]
             self.data_max = self.dataset[:, :, 0].max(1, keepdim=True)[0]
+
             self.dataset[:, :, 0] = (self.dataset[:, :, 0] - self.data_min) / (self.data_max - self.data_min)
-            
+
+            for i in range(self.data_min.size()[0]):
+                out = np.asarray([self.data_min[i], self.data_max[i]])
+                np.savetxt(data_dir + self.index_to_city[i] + "_scaling_data.csv", out)
+
         self.dataset = self.dataset.to(device)
 
     def load_scalings(self) -> bool:
