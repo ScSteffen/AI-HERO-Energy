@@ -43,13 +43,14 @@ if __name__ == '__main__':
                         default='/hkfs/work/workspace/scratch/bh6321-energy_challenge/AI-HERO/energy_baseline.pt',
                         help="Model weights path")  # TODO: adapt to your model weights path
     parser.add_argument("--save_dir", type=str, help='Directory where weights and results are saved', default='.')
+    parser.add_argument("--scale_dir", type=str, help='Directory where scalings are saved', default='.')
     parser.add_argument("--data_dir", type=str, help='Directory containing the data you want to predict',
                         default='/hkfs/work/workspace/scratch/bh6321-energy_challenge/data')
     args = parser.parse_args()
 
     save_dir = args.save_dir
     data_dir = args.data_dir
-
+    scale_dir = args.scale_dir
     weights_path = args.weights_path
 
     # load model with pretrained weights
@@ -63,7 +64,7 @@ if __name__ == '__main__':
     test_file = os.path.join(data_dir, 'test.csv')
     valid_file = os.path.join(data_dir, 'valid.csv')
     data_file = test_file if os.path.exists(test_file) else valid_file
-    testset = AllCitiesDataset(data_file, 7 * 24, 7 * 24, device=device, test=True, data_dir=weights_path)
+    testset = AllCitiesDataset(data_file, 7 * 24, 7 * 24, device=device, test=True, data_dir=scale_dir)
 
     # run inference
     forecasts = forecast(model, testset, device)
