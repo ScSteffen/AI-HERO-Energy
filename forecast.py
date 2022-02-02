@@ -11,17 +11,6 @@ from model import LoadForecaster as SubmittedModel
 import numpy as np
 
 
-def load_scalings() -> list:
-    ## loads data ans splits in list of entries - one for each city
-    cities = ['bs', 'h', 'ol', 'os', 'wob', 'go', 'sz', 'hi', 'del', 'lg', 'whv', 'ce', 'hm', 'el']
-    scaling_dict = dict()
-
-    for city in cities:
-        scaler = np.loadtxt("Data/" + city + "_scaling_data.csv")
-        scaling_dict[city] = scaler
-    return scaling_dict
-
-
 def forecast(forecast_model, forecast_set, device):
     forecast_model.to(device)
     forecast_model.eval()
