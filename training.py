@@ -41,7 +41,7 @@ def main():
             historic_window, forecast_horizon, device, True, args.city)
         valid_set = AllCitiesDataset(
             os.path.join(data_dir, 'valid.csv'),
-            historic_window, forecast_horizon, device, True, args.city
+            historic_window, forecast_horizon, device, True, args.city,
             train_set.data_min, train_set.data_max)
     else:
         train_set = RedWarriorDataset(
@@ -49,7 +49,7 @@ def main():
             historic_window, forecast_horizon, device, True, args.city)
         valid_set = RedWarriorDataset(
             os.path.join(data_dir, 'valid.csv'),
-            historic_window, forecast_horizon, device, True, args.city
+            historic_window, forecast_horizon, device, True, args.city,
             train_set.data_min, train_set.data_max)
 
     # Create DataLoaders
