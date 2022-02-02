@@ -89,13 +89,13 @@ class RedWarriorDataset(Dataset):
         # raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['day_frac'] - 1) / raw_data[
         #     'Time [s]'].dt.days_in_month
 
-        # raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
+        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
 
         self.dataset = torch.Tensor(raw_data[['Load [MWh]', \
                                               'day_frac', \
                                               'week_frac', \
-                                              # 'month_frac', 'year_frac'
-                                              ]].values.astype(np.float32))  # / population
+                                              # 'month_frac',
+                                              'year_frac']].values.astype(np.float32))  # / population
         # Normalize Data to [0,1]
         scaling_data = []
         if normalize is True:
@@ -161,7 +161,7 @@ class AllCitiesDataset(Dataset):
         # raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['day_frac'] - 1) / raw_data[
         #     'Time [s]'].dt.days_in_month
 
-        # raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
+        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
 
         self.cities = raw_data['City'].unique()
         self.city_pop_in_data = {x: self.city_population[x] for x in self.city_population if x in self.cities}
@@ -178,8 +178,8 @@ class AllCitiesDataset(Dataset):
             datasets.append(torch.Tensor(city_data[['Load [MWh]', \
                                                     'day_frac', \
                                                     'week_frac', \
-                                                    # 'month_frac', 'year_frac'
-                                                    ]].values.astype(np.float32)))  # / population
+                                                    # 'month_frac',
+                                                    'year_frac']].values.astype(np.float32)))  # / population
             # Maybe check if there are actually the same number of timepoints
             # per city
             self.n_timepoints = datasets[-1].shape[0] - self.historic_window - self.forecast_horizon
