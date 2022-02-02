@@ -42,7 +42,10 @@ def forecast(forecast_model, forecast_set, device):
         city = forecast_set.index_to_city[i]
         scaler = forecast_set.scaling_dict[city]
         out[i * input.size()[1]:(i + 1) * input.size()[1]] = prediction[i] * (scaler[1] - scaler[0]) + scaler[0]
-    return out
+
+    # rearrange to 168xnumWeeks matrix
+    out2 = np.reshape(out, (-1, 168))
+    return out2
 
 
 if __name__ == '__main__':
