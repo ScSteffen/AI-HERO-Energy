@@ -57,7 +57,7 @@ def main():
 
     trafo_model = True
 
-    model = Transformer(d_input=1, d_model=32, d_output=1, q=10, v=1, h=8, N=4, attention_size=None,
+    model = Transformer(d_input=1, d_model=16, d_output=1, q=5, v=1, h=4, N=4, attention_size=None,
                         dropout=0.1)
 
     criterion = nn.MSELoss()
