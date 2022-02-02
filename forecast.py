@@ -8,22 +8,41 @@ from dataset import AllCitiesDataset
 # TODO: import your model
 from model import LoadForecaster as SubmittedModel
 
+import numpy as np
+
+
+def load_scalings() -> list:
+    ## loads data ans splits in list of entries - one for each city
+    cities = ['bs', 'h', 'ol', 'os', 'wob', 'go', 'sz', 'hi', 'del', 'lg', 'whv', 'ce', 'hm', 'el']
+    scaling_dict = dict()
+
+    for city in cities:
+        scaler = np.loadtxt("Data/" + city + "_scaling_data.csv")
+        scaling_dict[city] = scaler
+    return scaling_dict
+
 
 def forecast(forecast_model, forecast_set, device):
     forecast_model.to(device)
     forecast_model.eval()
 
-    batch_size = 64
-    forecast_loader = DataLoader(forecast_set, batch_size=64, shuffle=False)
-    forecasts = torch.zeros([forecast_set.n_cities , forecast_set.n_timepoinsts, 7*24], device=device)
-    for n, (input_seq, _) in enumerate(forecast_loader):
-        # TODO: adjust forecast loop according to your model
-        with torch.no_grad():
-            actual_batch_size = len(input_seq)  # last batch has different size
-            hidden = forecast_model.init_hidden(actual_batch_size)
-            prediction, hidden = forecast_model(input_seq, hidden)
-            forecasts[n * batch_size:n * batch_size + actual_batch_size] = prediction
-    return forecasts
+    # batch_size = 1
+    # forecast_loader = DataLoader(forecast_set, batch_size=batch_size, shuffle=False)
+    # forecasts = torch.zeros([len(forecast_set), 1], device=device)
+    # batch x zeit x features
+    input = forecast_set.dataset
+    pred_list = []
+    with torch.no_grad():
+        hidden = forecast_model.init_hidden(input.size()[0])
+        prediction, hidden = forecast_model(input, hidden)
+
+    out = np.zeros((input.size()[0] * input.size()[1], 1))
+    for i in range(prediction.size()[0]):
+        # get scalings of this city
+        city = forecast_set.index_to_city[i]
+        scaler = forecast_set.scaling_dict[city]
+        out[i * input.size()[1]:(i + 1) * input.size()[1]] = prediction[i] * (scaler[1] - scaler[0]) + scaler[0]
+    return out
 
 
 if __name__ == '__main__':
@@ -52,14 +71,14 @@ if __name__ == '__main__':
     test_file = os.path.join(data_dir, 'test.csv')
     valid_file = os.path.join(data_dir, 'valid.csv')
     data_file = test_file if os.path.exists(test_file) else valid_file
-    testset = AllCitiesDataset(data_file, 7*24, 7*24, device=device)
+    testset = AllCitiesDataset(data_file, 7 * 24, 7 * 24, device=device, test=True)
 
     # run inference
-    normalized_forecasts = forecast(model, testset, device)
+    forecasts = forecast(model, testset, device)
 
     # remove normalization and convert to DataFrame
-    forecasts = testset.revert_normalization(normalized_forecasts)
-    df = DataFrame(forecasts.to(torch.device('cpu')).numpy())
+    # forecasts = testset.revert_normalization(normalized_forecasts)
+    df = DataFrame(forecasts)
 
     # save to csv
     result_path = os.path.join(save_dir, 'forecasts.csv')
