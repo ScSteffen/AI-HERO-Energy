@@ -89,7 +89,8 @@ class RedWarriorDataset(Dataset):
         # raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['day_frac'] - 1) / raw_data[
         #     'Time [s]'].dt.days_in_month
 
-        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
+        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (
+                365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
 
         self.dataset = torch.Tensor(raw_data[['Load [MWh]', \
                                               'day_frac', \
@@ -129,6 +130,7 @@ class AllCitiesDataset(Dataset):
     def __init__(self, data_file, historic_window, forecast_horizon, device=None, normalize=True, test=False,
                  data_dir=""):
         # Input sequence length and output (forecast) sequence length
+        self.data_dir = data_dir
         self.historic_window = historic_window
         self.forecast_horizon = forecast_horizon
         self.normalize = normalize
@@ -161,7 +163,8 @@ class AllCitiesDataset(Dataset):
         # raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['day_frac'] - 1) / raw_data[
         #     'Time [s]'].dt.days_in_month
 
-        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
+        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (
+                365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
 
         self.cities = raw_data['City'].unique()
         self.city_pop_in_data = {x: self.city_population[x] for x in self.city_population if x in self.cities}
@@ -214,7 +217,7 @@ class AllCitiesDataset(Dataset):
         self.scaling_dict = dict()
 
         for city in cities:
-            scaler = np.loadtxt("Data/" + city + "_scaling_data.csv")
+            scaler = np.loadtxt(self.data_dir + city + "_scaling_data.csv")
             self.scaling_dict[city] = scaler
         return True
 
