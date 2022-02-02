@@ -106,6 +106,7 @@ class RedWarriorDataset(Dataset):
             self.dataset[:, 0] = (self.dataset[:, 0] - self.data_min) / (self.data_max - self.data_min)
         scaling_data = np.asarray(scaling_data)
         np.savetxt(data_dir + city_ + "_scaling_data.csv", scaling_data)
+
         self.dataset = self.dataset.to(device)
 
     def __len__(self):

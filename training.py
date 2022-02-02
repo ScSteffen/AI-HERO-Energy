@@ -21,6 +21,7 @@ def main():
     parser.add_argument("--hidden_size", type=int, default=48, help="size of the internal state")
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--city", type=str, default=None)
     parser.add_argument("--quicktest", action='store_true')
 
     args = parser.parse_args()
@@ -34,12 +35,22 @@ def main():
 
     # Loading Data
     data_dir = args.data_dir
-    train_set = RedWarriorDataset(
-        os.path.join(data_dir, 'train.csv'), historic_window, forecast_horizon, city_='bs', device=None, normalize=True,
-        data_dir=data_dir)
-    valid_set = AllCitiesDataset(
-        os.path.join(data_dir, 'valid.csv'),
-        historic_window, forecast_horizon, device)
+    if args.city is None:
+        train_set = AllCitiesDataset(
+            os.path.join(data_dir, 'train.csv'),
+            historic_window, forecast_horizon, device, True, args.city)
+        valid_set = AllCitiesDataset(
+            os.path.join(data_dir, 'valid.csv'),
+            historic_window, forecast_horizon, device, True, args.city,
+            train_set.data_min, train_set.data_max)
+    else:
+        train_set = RedWarriorDataset(
+            os.path.join(data_dir, 'train.csv'),
+            historic_window, forecast_horizon, device, True, args.city)
+        valid_set = RedWarriorDataset(
+            os.path.join(data_dir, 'valid.csv'),
+            historic_window, forecast_horizon, device, True, args.city,
+            train_set.data_min, train_set.data_max)
 
     # Create DataLoaders
     batch_size = args.batch_size
@@ -93,11 +104,15 @@ def main():
         val_loss[epoch] /= len(loader)
         print(f"Epoch {epoch + 1}: Training Loss = {train_loss[epoch]}, Validation Loss = {val_loss[epoch]}")
 
-    model_name = "energy_" + "lstmv1"
+    model_name='energy_' + args.city +  '_lstmv1'
+    normalization_name='minmax_dict_' + args.city
     if args.save_dir:
         os.makedirs(args.save_dir, exist_ok=True)
         save_file = os.path.join(args.save_dir, model_name + ".pt")
+        minmax_file = os.path.join(args.save_dir, normalization_name + ".pt")
         torch.save(model.state_dict(), save_file)
+        torch.save({'min' : train_set.data_min,
+                    'max' : train_set.data_max}, minmax_file)
         print(f"Done! Saved model weights at {save_file}")
 
 
