@@ -38,10 +38,10 @@ def main():
     if args.city is None:
         train_set = AllCitiesDataset(
             os.path.join(data_dir, 'train.csv'),
-            historic_window, forecast_horizon, device, normalize=True, test=False, data_dir=data_dir)
+            historic_window, forecast_horizon, device, normalize=True, test=False, data_dir=args.save_dir)
         valid_set = AllCitiesDataset(
             os.path.join(data_dir, 'valid.csv'),
-            historic_window, forecast_horizon, device, normalize=True, test=True, data_dir=data_dir)
+            historic_window, forecast_horizon, device, normalize=True, test=True, data_dir=args.save_dir)
         args.city = ""
     else:
         train_set = RedWarriorDataset(
