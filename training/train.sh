@@ -10,10 +10,10 @@
 
 export CUDA_CACHE_DISABLE=1
 
-group_name=energy_challenge
+group_name=E3
 group_workspace=/hkfs/work/workspace/scratch/bh6321-${group_name}
 data_dir=/hkfs/work/workspace/scratch/bh6321-energy_challenge/data
 
-source ${group_workspace}/energy_baseline_env/bin/activate
+source ${group_workspace}/AI-HERO-Energy/energy_baseline_env/bin/activate
 python -u ${group_workspace}/AI-HERO-Energy/training.py --data_dir ${data_dir} --save_dir ${PWD}
 
