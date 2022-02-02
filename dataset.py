@@ -145,8 +145,7 @@ class AllCitiesDataset(Dataset):
         self.cities = raw_data['City'].unique()
         self.city_pop_in_data = {x: self.city_population[x] for x in self.city_population if x in self.cities}
 
-        self.n_cities = length(self.cities)
-        self.n_timepoints
+        self.n_cities = len(self.cities)
         self.total_samples = 0
         datasets = []
         self.index_to_city = {}
