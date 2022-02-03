@@ -13,7 +13,7 @@ class LoadForecaster(nn.Module):
 
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers=num_layer, dropout=dropout, batch_first=batch_first,
                             device=self.device)
-        self.fully_connected = nn.ReLU(nn.Linear(hidden_size, output_size, device=self.device))
+        self.fully_connected = nn.Linear(hidden_size, output_size, device=self.device)
 
     def forward(self, input_sequence, hidden):
         output, hidden = self.lstm(input_sequence, hidden)
