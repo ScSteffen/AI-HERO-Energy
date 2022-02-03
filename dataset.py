@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import pandas as pd
 import statistics
+import numpy as np
 
 def remove_outliers2(df):
     window = 7*24
@@ -40,17 +41,15 @@ class CustomLoadDataset(Dataset):
         raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (
                 365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
 
-        self.dataset = torch.Tensor(raw_data[['Load [MWh]', \
-                                              'day_frac', \
-                                              'week_frac', \
-                                              # 'month_frac',
-                                              'year_frac']].values.astype(np.float32))  # / population
-
         # Group data by city
         groups = raw_data.groupby('City')
         cities = []
         for city, df in groups['Load [MWh]']:
-            cities.append(torch.tensor(df.to_numpy(), dtype=torch.float))
+            cities.append(torch.tensor(df[['Load [MWh]', \
+                                           'day_frac', \
+                                           'week_frac', \
+                                           # 'month_frac',
+                                           'year_frac']].to_numpy(), dtype=torch.float))
 
         # Generate data tensor and metadata
         self.dataset = torch.stack(cities)
@@ -59,8 +58,8 @@ class CustomLoadDataset(Dataset):
 
         # Normalize Data to [0,1]
         if normalize is True:
-            self.data_min = torch.min(self.dataset[:,0])
-            self.data_max = torch.max(self.dataset[:,0])
+            self.data_min = torch.min(self.dataset[:,:,0])
+            self.data_max = torch.max(self.dataset[:,:,0])
             self.dataset = (self.dataset - self.data_min) / (self.data_max - self.data_min)
 
         self.dataset = self.dataset.to(device)
