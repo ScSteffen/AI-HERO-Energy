@@ -49,7 +49,7 @@ def main():
 
     # Configuring Model
     hidden_nodes = args.hidden_size
-    input_size = 1
+    input_size = 4
     output_size = 1
 
     n_iterations = args.num_epochs
