@@ -23,7 +23,7 @@ class LoadForecaster(nn.Module):
 
     def init_hidden(self, batch_size):
         hidden_state = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=self.device)
-        cell_state = torch.randn(self.num_layers, batch_size, self.hidden_size, device=self.device)
+        cell_state = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=self.device)
 
         return hidden_state, cell_state
 

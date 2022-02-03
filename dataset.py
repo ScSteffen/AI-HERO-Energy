@@ -317,6 +317,7 @@ class AllCitiesDatasetV2(Dataset):
         for city, population in self.city_pop_in_data.items():
             self.index_to_city[i] = city
             city_data = raw_data[raw_data['City'] == city]
+            city_data = remove_outliers2(city_data)
             datasets.append(torch.Tensor(city_data[['Load [MWh]', \
                                                     'day_frac', \
                                                     'week_frac', \

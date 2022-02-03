@@ -18,7 +18,7 @@ def main():
     parser.add_argument("--save_dir", default=None, help="saves the model, if path is provided")
     parser.add_argument("--historic_window", type=int, default=7 * 24, help="input time steps in hours")
     parser.add_argument("--forecast_horizon", type=int, default=forecast_days * 24, help="forecast time steps in hours")
-    parser.add_argument("--hidden_size", type=int, default=48, help="size of the internal state")
+    parser.add_argument("--hidden_size", type=int, default=32, help="size of the internal state")
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--city", type=str, default=None)
@@ -32,7 +32,6 @@ def main():
     # Forecast Parameters
     historic_window = args.historic_window
     forecast_horizon = args.forecast_horizon
-
     # Loading Data
     data_dir = args.data_dir
     if args.city is None:
@@ -64,13 +63,15 @@ def main():
 
     n_iterations = args.num_epochs
     learning_rate = args.learning_rate
-
-    model = LoadForecaster(input_size, hidden_nodes, output_size, device=device)
+    model = LoadForecaster(input_size, hidden_nodes, output_size, 2, device=device)
     criterion = nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     train_loss = torch.zeros(n_iterations)
     val_loss = torch.zeros(n_iterations)
+    min_val_loss = 1.e10
+    model_name = 'energy_' + args.city + '_lstmv1'
+    normalization_name = 'minmax_dict_' + args.city
 
     for epoch in range(n_iterations):
         # training phase
@@ -103,16 +104,14 @@ def main():
         val_loss[epoch] /= len(loader)
         print(f"Epoch {epoch + 1}: Training Loss = {train_loss[epoch]}, Validation Loss = {val_loss[epoch]}")
 
-    model_name = 'energy_' + args.city + '_lstmv1'
-    normalization_name = 'minmax_dict_' + args.city
-    if args.save_dir:
-        os.makedirs(args.save_dir, exist_ok=True)
-        save_file = os.path.join(args.save_dir, model_name + ".pt")
-        minmax_file = os.path.join(args.save_dir, normalization_name + ".pt")
-        torch.save(model.state_dict(), save_file)
-        torch.save({'min': train_set.data_min,
-                    'max': train_set.data_max}, minmax_file)
-        print(f"Done! Saved model weights at {save_file}")
+        if args.save_dir and min_val_loss > val_loss[epoch]:
+            os.makedirs(args.save_dir, exist_ok=True)
+            save_file = os.path.join(args.save_dir, model_name + ".pt")
+            minmax_file = os.path.join(args.save_dir, normalization_name + ".pt")
+            torch.save(model.state_dict(), save_file)
+            torch.save({'min': train_set.data_min,
+                        'max': train_set.data_max}, minmax_file)
+            print(f"Done! Saved model weights at {save_file}")
 
 
 if __name__ == '__main__':
