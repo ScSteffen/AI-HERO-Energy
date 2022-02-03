@@ -71,7 +71,7 @@ class CustomLoadDataset(Dataset):
         # translate idx (day nr) to array index
         city_idx = idx // self.samples_per_city
         hour_idx = idx % self.samples_per_city
-        x = self.dataset[city_idx, hour_idx:hour_idx+self.historic_window].unsqueeze(dim=1)
+        x = self.dataset[city_idx, hour_idx:hour_idx+self.historic_window]
         y = self.dataset[city_idx, hour_idx+self.historic_window:
                                    hour_idx+self.historic_window + self.forecast_horizon, 0].unsqueeze(dim=1)
 
