@@ -3,6 +3,20 @@ from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
 
+def remove_outliers2(df):
+    new_df = df + 0
+    window = 7*24
+    sign = lambda x: cmp(x, 0)
+    for k in range(0,len(df['Load [MWh]'])-window,window):
+        m = statistics.mean(df['Load [MWh]'][k:k+window])
+        s = statistics.stdev(df['Load [MWh]'][k:k+window])
+        for j in range(k,k+window,1):
+            dfv = df['Load [MWh]'][df['Load [MWh]'].index.start+j]
+            if (np.abs(dfv-m) > 2*s):
+                sig = sign(dfv-m)
+                new_df['Load [MWh]'][df['Load [MWh]'].index.start+j] = m + sig*2*s
+
+    return new_df
 
 class CustomLoadDataset(Dataset):
     def __init__(self, data_file, historic_window, forecast_horizon, device=None, normalize=True):
