@@ -14,7 +14,7 @@ def remove_outliers2(df):
             dfv = df.iloc[j, df.columns.get_loc('Load [MWh]')]
             if (np.abs(dfv-m) > 3*s):
                 sig = sign(dfv-m)
-                df.set_value(j, df.columns.get_loc('Load [MWh]'), m + sig*3*s)
+                df.iat[j, df.columns.get_loc('Load [MWh]')] = m + sig*3*s
 
     return df
 
