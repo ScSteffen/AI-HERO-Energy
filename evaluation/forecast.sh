@@ -10,12 +10,12 @@
 
 export CUDA_CACHE_DISABLE=1
 
-group_name=energy_challenge
+group_name=E3
 group_workspace=/hkfs/work/workspace/scratch/bh6321-${group_name}
 
 data_dir=/hkfs/work/workspace/scratch/bh6321-energy_challenge/data
 weights_path=${group_workspace}/AI-HERO-Energy/energy_baseline.pt
 
-source ${group_workspace}/energy_baseline_env/bin/activate
+source ${group_workspace}/AI-HERO-Energy/energy_baseline_env/bin/activate
 python3 -u ${group_workspace}/AI-HERO-Energy/forecast.py --save_dir "$PWD" --data_dir ${data_dir} --weights_path ${weights_path}
 
