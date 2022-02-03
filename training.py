@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from model import LoadForecaster
-from dataset import AllCitiesDataset, RedWarriorDataset
+from dataset import AllCitiesDataset, RedWarriorDataset, AllCitiesDatasetV2
 
 forecast_days = 7
 
@@ -36,10 +36,10 @@ def main():
     # Loading Data
     data_dir = args.data_dir
     if args.city is None:
-        train_set = AllCitiesDataset(
+        train_set = AllCitiesDatasetV2(
             os.path.join(data_dir, 'train.csv'),
             historic_window, forecast_horizon, device, normalize=True, test=False, data_dir=args.save_dir)
-        valid_set = AllCitiesDataset(
+        valid_set = AllCitiesDatasetV2(
             os.path.join(data_dir, 'valid.csv'),
             historic_window, forecast_horizon, device, normalize=True, test=True, data_dir=args.save_dir)
         args.city = ""
@@ -79,8 +79,7 @@ def main():
 
         for input_seq, target_seq in loader:
             hidden = model.init_hidden(batch_size)
-            predict, hidden = model(input_seq, hidden)
-
+            predict, hidden = model(input_seq[:, :, :4], hidden)
             loss = criterion(predict, target_seq)
             train_loss[epoch] += loss.item()
 
@@ -96,7 +95,7 @@ def main():
         for input_seq, target_seq in loader:
             with torch.no_grad():
                 hidden = model.init_hidden(batch_size)
-                predict, hidden = model(input_seq, hidden)
+                predict, hidden = model(input_seq[:, :, :4], hidden)
 
                 loss = criterion(predict, target_seq)
                 val_loss[epoch] += loss.item()

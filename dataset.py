@@ -243,3 +243,115 @@ class AllCitiesDataset(Dataset):
 
     def revert_normalization(self, data):
         return data[:, :, 0] * (self.data_max - self.data_min) + self.data_min
+
+
+class AllCitiesDatasetV2(Dataset):
+    """A dataset which takes a file with columns containing a float, timestamp and a string"""
+
+    def __init__(self, data_file, historic_window, forecast_horizon, device=None, normalize=True, test=False,
+                 data_dir=""):
+        # Input sequence length and output (forecast) sequence length
+        self.data_dir = data_dir
+        self.historic_window = historic_window
+        self.forecast_horizon = forecast_horizon
+        self.normalize = normalize
+        self.data_file = data_file
+        self.city_population = {'h': 0,
+                                'bs': 1,
+                                'ol': 2,
+                                'os': 3,
+                                'wob': 4,
+                                'go': 5,
+                                'sz': 6,
+                                'hi': 7,
+                                'del': 8,
+                                'lg': 9,
+                                'whv': 10,
+                                'ce': 11,
+                                'hm': 12,
+                                'el': 13}
+
+        # Load Data from csv to Pandas Dataframe
+        raw_data = pd.read_csv(self.data_file, delimiter=',')
+        raw_data['Time [s]'] = pd.to_datetime(raw_data['Time [s]'])
+
+        raw_data['day_frac'] = (raw_data['Time [s]'] - pd.to_datetime(
+            raw_data['Time [s]'].dt.date)).dt.total_seconds() / (
+                                       24 * 3600)
+
+        raw_data['week_frac'] = (raw_data['Time [s]'].dt.dayofweek + raw_data['day_frac']) / 7
+
+        # raw_data['month_frac'] = (raw_data['Time [s]'].dt.day + raw_data['day_frac'] - 1) / raw_data[
+        #     'Time [s]'].dt.days_in_month
+
+        raw_data['year_frac'] = raw_data['Time [s]'].dt.dayofyear / (
+                365 + raw_data['Time [s]'].dt.is_leap_year.astype(float))
+
+        self.cities = raw_data['City'].unique()
+        self.city_pop_in_data = {x: self.city_population[x] for x in self.city_population if x in self.cities}
+        self.city_tags = raw_data['City'].to_numpy()
+
+        city_tens = torch.zeros((raw_data['City'].size, 1))
+        for i in range(raw_data['City'].size):
+            city_tens[i] = self.city_pop_in_data[raw_data['City'][i]]
+        self.n_cities = len(self.cities)
+        self.scaling_dict = dict()
+        self.total_samples = 0
+        datasets = []
+        self.index_to_city = {}
+        i = 0
+        for city, population in self.city_pop_in_data.items():
+            self.index_to_city[i] = city
+            city_data = raw_data[raw_data['City'] == city]
+            datasets.append(torch.Tensor(city_data[['Load [MWh]', \
+                                                    'day_frac', \
+                                                    'week_frac', \
+                                                    # 'month_frac',
+                                                    'year_frac']].values.astype(np.float32)))  # / population
+            # Maybe check if there are actually the same number of timepoints
+            # per city
+            self.n_timepoints = datasets[-1].shape[0] - self.historic_window - self.forecast_horizon
+            self.total_samples += self.n_timepoints
+            i += 1
+        t = int(city_tens.size()[0] / self.n_cities)
+        city_tens = torch.reshape(city_tens, (self.n_cities, t, 1))
+
+        # datasets.append(city_tens)
+        # Normalize Data to [0,1]
+
+        self.dataset = torch.stack(datasets)
+        self.dataset = torch.cat([self.dataset, city_tens], -1)
+        # Normalize Data to [0,1]
+        if normalize is True and not test:
+            self.data_min = torch.min(self.dataset)
+            self.data_max = torch.max(self.dataset)
+            self.dataset[:, 0] = (self.dataset[:, 0] - self.data_min) / (self.data_max - self.data_min)
+            out = np.asarray([self.data_min.numpy(), self.data_max.numpy()])
+            np.savetxt("V2_scaling_data.csv", out)
+        else:  # test and validation
+            self.load_scalings()
+            self.dataset[:, 0] = (self.dataset[:, 0] - self.scaling_dict['V2'][0]) / (
+                    self.scaling_dict['V2'][1] - self.scaling_dict['V2'][0])
+        self.dataset = self.dataset.to(device)
+
+    def load_scalings(self) -> bool:
+        ## loads data ans splits in list of entries - one for each city
+        self.scaling_dict = dict()
+        scaler = np.loadtxt("V2_scaling_data.csv")
+        self.scaling_dict['V2'] = scaler
+        return True
+
+    def __len__(self):
+        return int(self.total_samples)
+
+    def __getitem__(self, idx):
+        batch = idx // self.n_timepoints
+        idx_ = idx % self.n_timepoints
+        # translate idx (day nr) to array index
+        x = self.dataset[batch, idx_:idx_ + self.historic_window, :]
+        y = self.dataset[batch, idx_ + self.historic_window: idx_ + self.historic_window + self.forecast_horizon,
+            0].unsqueeze(1)
+        return x, y
+
+    def revert_normalization(self, data):
+        return data[:, :, 0] * (self.data_max - self.data_min) + self.data_min

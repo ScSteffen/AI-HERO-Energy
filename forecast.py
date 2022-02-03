@@ -3,12 +3,10 @@ from argparse import ArgumentParser
 import torch
 from torch.utils.data import DataLoader
 from pandas import DataFrame
-from dataset import AllCitiesDataset
+from dataset import AllCitiesDataset, AllCitiesDatasetV2
 
 # TODO: import your model
 from model import LoadForecaster as SubmittedModel
-
-import numpy as np
 
 
 def forecast(forecast_model, forecast_set, device):
@@ -31,25 +29,28 @@ def forecast(forecast_model, forecast_set, device):
     for i in range(forecasts.size()[0]):
         scaler = forecast_set.scaling_dict[forecast_set.index_to_city[int(cities[i, 0])]]
         forecasts[i, :] = forecasts[i, :] * (scaler[1] - scaler[0]) + scaler[0]
+    return forecasts
 
-    """
-    input = forecast_set.dataset
-    pred_list = []
-    with torch.no_grad():
-        hidden = forecast_model.init_hidden(input.size()[0])
-        prediction, hidden = forecast_model(input, hidden)
 
-    pred_cpu = prediction.cpu()
-    out = np.zeros((input.size()[0] * input.size()[1], 1))
-    for i in range(pred_cpu.size()[0]):
-        # get scalings of this city
-        city = forecast_set.index_to_city[i]
-        scaler = forecast_set.scaling_dict[city]
-        out[i * input.size()[1]:(i + 1) * input.size()[1]] = pred_cpu[i] * (scaler[1] - scaler[0]) + scaler[0]
+def forecastV2(forecast_model, forecast_set, device):
+    forecast_model.to(device)
+    forecast_model.eval()
 
-    # rearrange to 168xnumWeeks matrix
-    out2 = np.reshape(out, (-1, 168))
-    """
+    batch_size = 64
+    forecast_loader = DataLoader(forecast_set, batch_size=64, shuffle=False)
+    forecasts = torch.zeros([len(forecast_set), 7 * 24], device=device)
+    cities = torch.zeros([len(forecast_set), 7 * 24], device=device)
+    for n, (input_seq, _) in enumerate(forecast_loader):
+        # TODO: adjust forecast loop according to your model
+        with torch.no_grad():
+            actual_batch_size = len(input_seq)  # last batch has different size
+            hidden = forecast_model.init_hidden(actual_batch_size)
+            prediction, hidden = forecast_model(input_seq[:, :, :4], hidden)
+            forecasts[n * batch_size:n * batch_size + actual_batch_size] = prediction.squeeze(dim=-1)
+            cities[n * batch_size:n * batch_size + actual_batch_size] = input_seq[:, :, 4].squeeze(dim=-1)
+
+    scaler = forecast_set.scaling_dict['V2']
+    forecasts = forecasts * (scaler[1] - scaler[0]) + scaler[0]
     return forecasts
 
 
@@ -80,10 +81,10 @@ if __name__ == '__main__':
     test_file = os.path.join(data_dir, 'test.csv')
     valid_file = os.path.join(data_dir, 'valid.csv')
     data_file = test_file if os.path.exists(test_file) else valid_file
-    testset = AllCitiesDataset(data_file, 7 * 24, 7 * 24, device=device, test=True, data_dir=scale_dir)
+    testset = AllCitiesDatasetV2(data_file, 7 * 24, 7 * 24, device=device, test=True, data_dir=scale_dir)
 
     # run inference
-    forecasts = forecast(model, testset, device)
+    forecasts = forecastV2(model, testset, device)
 
     # remove normalization and convert to DataFrame
     df = DataFrame(forecasts.to(torch.device('cpu')).numpy())
