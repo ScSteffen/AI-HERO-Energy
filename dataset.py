@@ -44,7 +44,7 @@ class CustomLoadDataset(Dataset):
         # Group data by city
         groups = raw_data.groupby('City')
         cities = []
-        for city, df in groups['Load [MWh]']:
+        for city, df in groups:
             cities.append(torch.tensor(df[['Load [MWh]', \
                                            'day_frac', \
                                            'week_frac', \
