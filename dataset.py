@@ -12,9 +12,9 @@ def remove_outliers2(df):
         s = statistics.stdev(df['Load [MWh]'][k:k+window])
         for j in range(k,k+window,1):
             dfv = df.iloc[j, df.columns.get_loc('Load [MWh]')]
-            if (np.abs(dfv-m) > 2*s):
+            if (np.abs(dfv-m) > 3*s):
                 sig = sign(dfv-m)
-                df.iloc[j, df.columns.get_loc('Load [MWh]')] = m + sig*2*s
+                df.iloc[j, df.columns.get_loc('Load [MWh]')] = m + sig*3*s
 
     return df
 
@@ -45,11 +45,11 @@ class CustomLoadDataset(Dataset):
         groups = raw_data.groupby('City')
         cities = []
         for city, df in groups:
-            cities.append(torch.tensor(df[['Load [MWh]', \
+            cities.append(torch.tensor(remove_outliers2(df[['Load [MWh]', \
                                            'day_frac', \
                                            'week_frac', \
                                            # 'month_frac',
-                                           'year_frac']].to_numpy(), dtype=torch.float))
+                                           'year_frac']]).to_numpy(), dtype=torch.float))
 
         # Generate data tensor and metadata
         self.dataset = torch.stack(cities)

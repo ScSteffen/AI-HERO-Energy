@@ -61,7 +61,7 @@ def main():
 
     train_loss = torch.zeros(n_iterations)
     val_loss = torch.zeros(n_iterations)
-
+    min_val_loss = 1.e10
     for epoch in range(n_iterations):
         # training phase
         model.train()
@@ -94,11 +94,11 @@ def main():
         val_loss[epoch] /= len(loader)
         print(f"Epoch {epoch + 1}: Training Loss = {train_loss[epoch]}, Validation Loss = {val_loss[epoch]}")
 
-    if args.save_dir:
-        os.makedirs(args.save_dir, exist_ok=True)
-        save_file = os.path.join(args.save_dir, "energy_baseline.pt")
-        torch.save(model.state_dict(), save_file)
-        print(f"Done! Saved model weights at {save_file}")
+        if args.save_dir and min_val_loss > val_loss[epoch]:
+            os.makedirs(args.save_dir, exist_ok=True)
+            save_file = os.path.join(args.save_dir, "energy_baseline.pt")
+            torch.save(model.state_dict(), save_file)
+            print(f"Done! Saved model weights at {save_file}")
 
 
 if __name__ == '__main__':
