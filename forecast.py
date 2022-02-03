@@ -44,7 +44,7 @@ if __name__ == '__main__':
     # load model with pretrained weights
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # TODO: adjust arguments according to your model
-    model = SubmittedModel(input_size=4, hidden_size=48, output_size=1, num_layer=1, device=device)
+    model = SubmittedModel(input_size=4, hidden_size=48, output_size=1, num_layer=2, device=device)
     model.load_state_dict(torch.load(weights_path, map_location=device))
     model.eval()
 

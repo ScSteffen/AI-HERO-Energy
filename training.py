@@ -55,7 +55,7 @@ def main():
     n_iterations = args.num_epochs
     learning_rate = args.learning_rate
 
-    model = LoadForecaster(input_size, hidden_nodes, output_size, device=device)
+    model = LoadForecaster(input_size, hidden_nodes, output_size, num_layer=2, device=device)
     criterion = nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
